@@ -184,8 +184,55 @@ function CollapsibleBase({
   className,
 }: CollapsibleBaseProps) {
   const collapsibleRef = useRef<HTMLElement>(null);
+  const mounted = useRef(false);
 
   useCollapseAnimation({collapsibleRef, collapsed, animation});
+
+  const finishTransition = useCallback(() => {
+    if (collapsibleRef.current) {
+      applyCollapsedStyle(collapsibleRef.current, collapsed);
+      onCollapseTransitionEnd?.(collapsed);
+    }
+  }, [collapsed, onCollapseTransitionEnd]);
+
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return undefined;
+    }
+
+    const el = collapsibleRef.current;
+    if (!el) {
+      return undefined;
+    }
+
+    const computedDurationStr =
+      typeof window !== 'undefined'
+        ? window.getComputedStyle(el).transitionDuration
+        : '0s';
+    const computedDurationMs =
+      parseFloat(computedDurationStr) *
+      (computedDurationStr.endsWith('ms') ? 1 : 1000);
+
+    const height = el.scrollHeight;
+    const configuredDuration =
+      animation?.duration ?? getAutoHeightDuration(height);
+
+    const effectiveDuration = Math.min(configuredDuration, computedDurationMs);
+
+    if (effectiveDuration === 0) {
+      const frame = requestAnimationFrame(() => {
+        finishTransition();
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+
+    const timer = setTimeout(() => {
+      finishTransition();
+    }, effectiveDuration + 100);
+
+    return () => clearTimeout(timer);
+  }, [collapsed, animation, finishTransition]);
 
   return (
     <As
@@ -197,8 +244,7 @@ function CollapsibleBase({
           return;
         }
 
-        applyCollapsedStyle(collapsibleRef.current!, collapsed);
-        onCollapseTransitionEnd?.(collapsed);
+        finishTransition();
       }}
       className={className}>
       {children}
