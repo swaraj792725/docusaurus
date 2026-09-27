@@ -335,6 +335,31 @@ describe('handleBrokenLinks', () => {
     });
   });
 
+  it('handles malformed percent-encoded links and anchors without crashing', async () => {
+    await expect(() =>
+      testBrokenLinks({
+        routes: [{path: '/page1'}],
+        collectedLinks: {
+          '/page1': {
+            links: ['/page%', '/page 2#100%'],
+            anchors: [],
+          },
+        },
+      }),
+    ).rejects.toThrowErrorMatchingInlineSnapshot(`
+      [Error: Docusaurus found broken links!
+
+      Please check the pages of your site in the list below, and make sure you don't reference any path that does not exist.
+      Note: it's possible to ignore broken links with the 'onBrokenLinks' Docusaurus configuration, and let the build pass.
+
+      Exhaustive list of all broken links found:
+      - Broken link on source page path = /page1:
+         -> linking to /page%
+         -> linking to /page 2#100% (resolved as: /page%202#100%)
+      ]
+    `);
+  });
+
   it('accepts valid link with empty anchor', async () => {
     await testBrokenLinks({
       routes: [{path: '/page 1'}, {path: '/page 2'}],
