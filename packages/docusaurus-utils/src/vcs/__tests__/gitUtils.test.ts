@@ -21,6 +21,7 @@ import {
   getGitSubmodulePaths,
   getGitAllRepoRoots,
   getGitRepositoryFilesInfo,
+  normalizeGitPath,
 } from '../gitUtils';
 import {createVcsGitEagerConfig} from '../vcsGitEager';
 
@@ -405,6 +406,32 @@ describe('commit info APIs', () => {
       expect(fileInfo!.creation.author).toBe('Doe, Jane');
       expect(fileInfo!.lastUpdate.author).toBe('Doe, Jane');
     });
+  });
+});
+
+describe('normalizeGitPath', () => {
+  it.runIf(process.platform === 'win32')(
+    'normalizes MSYS paths on Windows',
+    () => {
+      expect(normalizeGitPath('/c/Users/docusaurus/repo')).toBe(
+        'C:/Users/docusaurus/repo',
+      );
+      expect(normalizeGitPath('/p/projets/my-repo')).toBe('P:/projets/my-repo');
+      expect(normalizeGitPath('\\d\\work\\site')).toBe('D:/work/site');
+    },
+  );
+
+  it.runIf(process.platform !== 'win32')(
+    'preserves POSIX paths on non-Windows',
+    () => {
+      expect(normalizeGitPath('/c/Users/docusaurus/repo')).toBe(
+        '/c/Users/docusaurus/repo',
+      );
+    },
+  );
+
+  it('trims whitespace', () => {
+    expect(normalizeGitPath('  /some/path  \n')).toBe('/some/path');
   });
 });
 

@@ -269,6 +269,20 @@ export async function isGitInsideWorktree(cwd: string): Promise<boolean> {
   }
 }
 
+export function normalizeGitPath(p: string): string {
+  const trimmed = p.trim();
+  if (process.platform === 'win32') {
+    // MSYS/Git Bash on Windows returns POSIX drive paths
+    // e.g. "/c/Users/..." or "/p/projets/..."
+    const msysMatch = /^[/\\](?<drive>[a-z])[/\\](?<rest>.*)$/i.exec(trimmed);
+    if (msysMatch?.groups) {
+      const {drive, rest} = msysMatch.groups;
+      return `${drive.toUpperCase()}:/${rest}`;
+    }
+  }
+  return trimmed;
+}
+
 export async function getGitRepoRoot(cwd: string): Promise<string> {
   const result = await execa('git', ['rev-parse', '--show-toplevel'], {
     cwd,
@@ -284,7 +298,7 @@ The command executed throws an error: ${error.message}`,
     );
   });
 
-  return fs.realpath.native(result.stdout.trim());
+  return fs.realpath.native(normalizeGitPath(result.stdout));
 }
 
 // A Git "superproject" is a Git repository that contains submodules
@@ -311,7 +325,7 @@ The command executed throws an error: ${error.message}`,
     );
   });
 
-  const output = result.stdout.trim();
+  const output = normalizeGitPath(result.stdout);
   // this command only works when inside submodules
   // otherwise it doesn't return anything when we are inside the main repo
   if (output) {
