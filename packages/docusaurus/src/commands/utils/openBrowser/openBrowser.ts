@@ -100,19 +100,21 @@ async function tryOpenWithAppleScript({
     // osascript ./packages/docusaurus/src/commands/utils/openBrowser/openChrome.applescript "http://localhost:8080" "Arc"
     async function tryBrowser(browserName: string): Promise<boolean> {
       try {
-        // This command runs the openChrome.applescript (copied from CRA)
-        const command = `osascript openChrome.applescript "${encodeURI(
-          url,
-        )}" "${browserName}"`;
+        const isChromeVariant = browserName
+          .toLowerCase()
+          .startsWith('google chrome');
+        const command = isChromeVariant
+          ? `osascript openChrome.applescript "${encodeURI(
+              url,
+            )}" "${browserName}"`
+          : `osascript -e 'tell application "${browserName}" to activate' -e 'tell application "${browserName}" to open location "${encodeURI(
+              url,
+            )}"'`;
         await execPromise(command, {
           cwd: __dirname,
         });
         return true;
-      } catch (err) {
-        console.error(
-          `Failed to open browser ${browserName} with AppleScript`,
-          err,
-        );
+      } catch {
         return false;
       }
     }

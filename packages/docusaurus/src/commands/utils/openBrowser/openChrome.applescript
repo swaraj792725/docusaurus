@@ -19,55 +19,65 @@ on run argv
     set theProgram to item 2 of argv
   end if
 
-  -- Arc: simple open + activate, no tab reuse
+  -- Non-Chrome browsers (Arc, Microsoft Edge, Brave Browser, Vivaldi, etc.)
+  -- do not support Google Chrome's specific AppleScript dictionary terms.
+  -- Simple open + activate for non-Chrome browsers.
+  -- See https://github.com/facebook/docusaurus/issues/11482
   -- See https://github.com/facebook/docusaurus/issues/11582
-  if theProgram is "Arc" then
-    tell application "Arc"
+  if theProgram is not "Google Chrome" and theProgram is not "Google Chrome Canary" and theProgram is not "Google Chrome Dev" and theProgram is not "Google Chrome Beta" then
+    tell application theProgram
       activate
       open location theURL
     end tell
     return
   end if
 
-  using terms from application "Google Chrome"
-    tell application theProgram
+  try
+    using terms from application "Google Chrome"
+      tell application theProgram
 
-      if (count every window) = 0 then
-        make new window
-      end if
+        if (count every window) = 0 then
+          make new window
+        end if
 
-      -- 1: Looking for tab running debugger
-      -- then, Reload debugging tab if found
-      -- then return
-      set found to my lookupTabWithUrl(theURL)
-      if found then
-        set targetWindow's active tab index to targetTabIndex
-        tell targetTab to reload
-        tell targetWindow to activate
-        set index of targetWindow to 1
-        return
-      end if
+        -- 1: Looking for tab running debugger
+        -- then, Reload debugging tab if found
+        -- then return
+        set found to my lookupTabWithUrl(theURL)
+        if found then
+          set targetWindow's active tab index to targetTabIndex
+          tell targetTab to reload
+          tell targetWindow to activate
+          set index of targetWindow to 1
+          return
+        end if
 
-      -- 2: Looking for Empty tab
-      -- In case debugging tab was not found
-      -- We try to find an empty tab instead
-      set found to my lookupTabWithUrl("chrome://newtab/")
-      if found then
-        set targetWindow's active tab index to targetTabIndex
-        set URL of targetTab to theURL
-        tell targetWindow to activate
-        return
-      end if
+        -- 2: Looking for Empty tab
+        -- In case debugging tab was not found
+        -- We try to find an empty tab instead
+        set found to my lookupTabWithUrl("chrome://newtab/")
+        if found then
+          set targetWindow's active tab index to targetTabIndex
+          set URL of targetTab to theURL
+          tell targetWindow to activate
+          return
+        end if
 
-      -- 3: Create new tab
-      -- both debugging and empty tab were not found
-      -- make a new tab with url
-      tell window 1
-        activate
-        make new tab with properties {URL:theURL}
+        -- 3: Create new tab
+        -- both debugging and empty tab were not found
+        -- make a new tab with url
+        tell window 1
+          activate
+          make new tab with properties {URL:theURL}
+        end tell
       end tell
+    end using terms from
+  on error
+    tell application theProgram
+      activate
+      open location theURL
     end tell
-  end using terms from
+  end try
 end run
 
 -- Function:
@@ -75,30 +85,34 @@ end run
 -- if found, store tab, index, and window in properties
 -- (properties were declared on top of file)
 on lookupTabWithUrl(lookupUrl)
-  using terms from application "Google Chrome"
-    tell application theProgram
-      -- Find a tab with the given url
-      set found to false
-      set theTabIndex to -1
-      repeat with theWindow in every window
-        set theTabIndex to 0
-        repeat with theTab in every tab of theWindow
-          set theTabIndex to theTabIndex + 1
-          if (theTab's URL as string) contains lookupUrl then
-            -- assign tab, tab index, and window to properties
-            set targetTab to theTab
-            set targetTabIndex to theTabIndex
-            set targetWindow to theWindow
-            set found to true
+  try
+    using terms from application "Google Chrome"
+      tell application theProgram
+        -- Find a tab with the given url
+        set found to false
+        set theTabIndex to -1
+        repeat with theWindow in every window
+          set theTabIndex to 0
+          repeat with theTab in every tab of theWindow
+            set theTabIndex to theTabIndex + 1
+            if (theTab's URL as string) contains lookupUrl then
+              -- assign tab, tab index, and window to properties
+              set targetTab to theTab
+              set targetTabIndex to theTabIndex
+              set targetWindow to theWindow
+              set found to true
+              exit repeat
+            end if
+          end repeat
+
+          if found then
             exit repeat
           end if
         end repeat
-
-        if found then
-          exit repeat
-        end if
-      end repeat
-    end tell
-  end using terms from
-  return found
+      end tell
+    end using terms from
+    return found
+  on error
+    return false
+  end try
 end lookupTabWithUrl
