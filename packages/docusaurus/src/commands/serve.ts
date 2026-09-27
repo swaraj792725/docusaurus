@@ -77,7 +77,8 @@ export async function serve(
     if (baseUrl !== '/') {
       // Not super robust, but should be good enough for our use case
       // See https://github.com/facebook/docusaurus/pull/10090
-      const looksLikeAsset = !!req.url.match(/\.[a-z\d]{1,4}$/i);
+      const [pathname] = req.url.split(/[#?]/) as [string, ...string[]];
+      const looksLikeAsset = !!pathname.match(/\.[a-z\d]+$/i);
       if (!looksLikeAsset) {
         const normalizedUrl = applyTrailingSlash(req.url, {
           trailingSlash,
