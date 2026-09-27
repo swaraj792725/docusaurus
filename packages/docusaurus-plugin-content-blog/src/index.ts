@@ -183,6 +183,7 @@ export default async function pluginContentBlog(
       include: contentDirs
         // Trailing slash is important, see https://github.com/facebook/docusaurus/pull/3970
         .map(addTrailingPathSeparator),
+      exclude: createAbsoluteFilePathMatcher(options.exclude, contentDirs),
       use: [mdxLoaderItem, createBlogMarkdownLoader()],
     };
   }

@@ -128,6 +128,7 @@ export default async function pluginContentDocs(
 
     return createMDXLoaderRule({
       include: contentDirs,
+      exclude: createAbsoluteFilePathMatcher(options.exclude, contentDirs),
       options: {
         dependencies: [mdxLoaderDependency].filter(
           (d): d is string => typeof d === 'string',

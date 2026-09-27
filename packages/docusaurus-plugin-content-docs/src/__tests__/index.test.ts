@@ -337,6 +337,16 @@ describe('simple website', () => {
     });
     const errors = webpack.validate(config);
     expect(errors).toBeUndefined();
+
+    const mdxRule = config.module?.rules?.find(
+      (rule) =>
+        typeof rule === 'object' &&
+        rule &&
+        'test' in rule &&
+        rule.test?.toString().includes('mdx'),
+    ) as RuleSetRule | undefined;
+    expect(mdxRule).toBeDefined();
+    expect(mdxRule!.exclude).toBeTypeOf('function');
   });
 
   it('content', async () => {

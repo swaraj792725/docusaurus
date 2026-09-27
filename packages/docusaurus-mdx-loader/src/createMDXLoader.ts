@@ -52,14 +52,17 @@ export function createMDXLoaderItem(
 
 export function createMDXLoaderRule({
   include,
+  exclude,
   options,
 }: {
   include: RuleSetRule['include'];
+  exclude?: RuleSetRule['exclude'];
   options: Options & CreateOptions;
 }): RuleSetRule {
   return {
     test: /\.mdx?$/i,
     include,
+    ...(exclude && {exclude}),
     with: {type: {not: 'text'}},
     use: [createMDXLoaderItem(options)],
   };

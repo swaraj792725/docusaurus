@@ -76,10 +76,15 @@ function getDefaultCalendar(localeStr: string) {
 }
 
 function getDefaultDirection(localeStr: string) {
-  const locale = new Intl.Locale(localeStr);
+  const locale = new Intl.Locale(localeStr) as Intl.Locale & {
+    getTextInfo?: () => {direction?: string};
+    textInfo?: {direction?: string};
+  };
   // see https://github.com/tc39/proposal-intl-locale-info
   // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
-  return locale.getTextInfo().direction ?? 'ltr';
+  return (
+    locale.getTextInfo?.()?.direction ?? locale.textInfo?.direction ?? 'ltr'
+  );
 }
 
 export function getDefaultLocaleConfig(
