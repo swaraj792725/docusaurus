@@ -29,8 +29,19 @@ const MDXEscapingUtils = (function () {
     MARKUP_CHARS.map((char) => [markerOf(char), char]),
   );
 
+  const escapeRegExp =
+    typeof RegExp.escape === 'function'
+      ? RegExp.escape
+      : (str: string) =>
+          str.replace(/[\^$*+?.()|[\]{}/\\\-]/g, (char) => {
+            if (char === '-') {
+              return '\\x2d';
+            }
+            return `\\${char}`;
+          });
+
   const MARKUP_CHARS_REGEX = new RegExp(
-    `[${RegExp.escape(MARKUP_CHARS.join(''))}]`,
+    `[${escapeRegExp(MARKUP_CHARS.join(''))}]`,
     'g',
   );
   const MARKUP_MARKERS_REGEX = /\u{FFFE}\d+\u{FFFF}/gu;

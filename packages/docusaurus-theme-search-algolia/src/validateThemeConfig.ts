@@ -25,6 +25,17 @@ const FacetFiltersSchema = Joi.array().items(
   Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())),
 );
 
+const escapeRegExp =
+  typeof RegExp.escape === 'function'
+    ? RegExp.escape
+    : (str: string) =>
+        str.replace(/[\^$*+?.()|[\]{}/\\\-]/g, (char) => {
+          if (char === '-') {
+            return '\\x2d';
+          }
+          return `\\${char}`;
+        });
+
 const Schema = Joi.object<ThemeConfig>({
   algolia: Joi.object<ThemeConfigAlgolia>({
     // Docusaurus attributes
@@ -49,7 +60,7 @@ const Schema = Joi.object<ThemeConfig>({
     replaceSearchResultPathname: Joi.object({
       from: Joi.custom((from) => {
         if (typeof from === 'string') {
-          return RegExp.escape(from);
+          return escapeRegExp(from);
         } else if (from instanceof RegExp) {
           return from.source;
         }

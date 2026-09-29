@@ -52,9 +52,12 @@ function testField(params: {
           )}`,
         );
       } catch (err) {
+        const escapeRegExp =
+          RegExp.escape ??
+          ((s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
         // eslint-disable-next-line vitest/no-conditional-expect
         expect((err as Error).message).toMatch(
-          new RegExp(RegExp.escape(message)),
+          new RegExp(escapeRegExp(message)),
         );
       }
     });
