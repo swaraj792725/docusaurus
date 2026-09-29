@@ -33,6 +33,11 @@ export type ServeCLIOptions = HostPortOptions &
     open?: boolean;
   };
 
+export function isAssetUrl(url: string): boolean {
+  const [pathname] = url.split(/[#?]/) as [string, ...string[]];
+  return !!pathname.match(/\.[a-z\d]+$/i);
+}
+
 export async function serve(
   siteDirParam: string = '.',
   cliOptions: Partial<ServeCLIOptions> = {},
@@ -77,8 +82,7 @@ export async function serve(
     if (baseUrl !== '/') {
       // Not super robust, but should be good enough for our use case
       // See https://github.com/facebook/docusaurus/pull/10090
-      const [pathname] = req.url.split(/[#?]/) as [string, ...string[]];
-      const looksLikeAsset = !!pathname.match(/\.[a-z\d]+$/i);
+      const looksLikeAsset = isAssetUrl(req.url);
       if (!looksLikeAsset) {
         const normalizedUrl = applyTrailingSlash(req.url, {
           trailingSlash,
