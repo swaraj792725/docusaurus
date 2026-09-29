@@ -10,6 +10,7 @@ import openBrowser from '../utils/openBrowser/openBrowser';
 import {setupSiteFileWatchers} from './watcher';
 import {createWebpackDevServer} from './webpack';
 import {createReloadableSite} from './utils';
+import {lockStartProcess} from './lock';
 import type {LoadContextParams} from '../../server/site';
 import type {HostPortOptions} from '../../server/getHostPort';
 
@@ -28,6 +29,7 @@ async function doStart(
   siteDirParam: string = '.',
   cliOptions: Partial<StartCLIOptions> = {},
 ): Promise<void> {
+  await lockStartProcess(siteDirParam);
   logger.info('Starting the development server...');
   // Temporary workaround to unlock the ability to translate the site config
   // We'll remove it if a better official API can be designed
