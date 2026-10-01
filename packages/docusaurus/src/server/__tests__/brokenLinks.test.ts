@@ -648,6 +648,74 @@ describe('handleBrokenLinks', () => {
     });
   });
 
+  it('handles broken link with malformed percent-encoding in path', async () => {
+    // Should not throw URIError: URI malformed when onBrokenLinks is 'ignore'
+    await testBrokenLinks({
+      onBrokenLinks: 'ignore',
+      routes: [{path: '/page1'}],
+      collectedLinks: {
+        '/page1': {
+          links: ['/page%'],
+          anchors: [],
+        },
+      },
+    });
+
+    // Should report as broken link instead of crashing
+    await expect(() =>
+      testBrokenLinks({
+        onBrokenLinks: 'throw',
+        routes: [{path: '/page1'}],
+        collectedLinks: {
+          '/page1': {
+            links: ['/page%'],
+            anchors: [],
+          },
+        },
+      }),
+    ).rejects.toThrowError('Docusaurus found broken links!');
+  });
+
+  it('handles broken anchor with malformed percent-encoding in anchor', async () => {
+    // Should not throw URIError: URI malformed when onBrokenAnchors is 'ignore'
+    await testBrokenLinks({
+      onBrokenAnchors: 'ignore',
+      routes: [{path: '/page1'}],
+      collectedLinks: {
+        '/page1': {
+          links: ['/page1#100%'],
+          anchors: [],
+        },
+      },
+    });
+
+    // Should report as broken anchor instead of crashing
+    await expect(() =>
+      testBrokenLinks({
+        onBrokenAnchors: 'throw',
+        routes: [{path: '/page1'}],
+        collectedLinks: {
+          '/page1': {
+            links: ['/page1#100%'],
+            anchors: [],
+          },
+        },
+      }),
+    ).rejects.toThrowError('Docusaurus found broken anchors!');
+
+    // Accepts when the anchor actually exists matching the raw anchor
+    await testBrokenLinks({
+      onBrokenAnchors: 'throw',
+      routes: [{path: '/page1'}],
+      collectedLinks: {
+        '/page1': {
+          links: ['/page1#100%'],
+          anchors: ['100%'],
+        },
+      },
+    });
+  });
+
   it('can ignore broken anchors but report broken link', async () => {
     await expect(() =>
       testBrokenLinks({

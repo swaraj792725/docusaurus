@@ -51,6 +51,22 @@ type BrokenLinksHelper = {
   isAnchorBrokenLink: (linkPath: URLPath) => boolean;
 };
 
+function safeDecodeURI(str: string): string | undefined {
+  try {
+    return decodeURI(str);
+  } catch {
+    return undefined;
+  }
+}
+
+function safeDecodeURIComponent(str: string): string | undefined {
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return undefined;
+  }
+}
+
 function createBrokenLinksHelper({
   collectedLinks,
   routes,
@@ -102,7 +118,10 @@ function createBrokenLinksHelper({
   }
 
   function isPathBrokenLink(linkPath: URLPath) {
-    const pathnames = [linkPath.pathname, decodeURI(linkPath.pathname)];
+    const decoded = safeDecodeURI(linkPath.pathname);
+    const pathnames = decoded
+      ? [linkPath.pathname, decoded]
+      : [linkPath.pathname];
     if (pathnames.some((p) => validPathnames.has(p))) {
       return false;
     }
@@ -124,25 +143,31 @@ function createBrokenLinksHelper({
     if (hash === '') {
       return false;
     }
+    const decodedPathname = safeDecodeURI(pathname);
     const targetPage =
       collectedLinks.get(pathname) ??
-      collectedLinks.get(decodeURI(pathname)) ??
+      (decodedPathname ? collectedLinks.get(decodedPathname) : undefined) ??
       // The broken link checker should not care about a trailing slash
       // Those are already covered by the broken pathname checker
       // See https://github.com/facebook/docusaurus/issues/10116
       collectedLinks.get(addTrailingSlash(pathname)) ??
-      collectedLinks.get(addTrailingSlash(decodeURI(pathname))) ??
+      (decodedPathname
+        ? collectedLinks.get(addTrailingSlash(decodedPathname))
+        : undefined) ??
       collectedLinks.get(removeTrailingSlash(pathname)) ??
-      collectedLinks.get(removeTrailingSlash(decodeURI(pathname)));
+      (decodedPathname
+        ? collectedLinks.get(removeTrailingSlash(decodedPathname))
+        : undefined);
     // link with anchor to a page that does not exist (or did not collect any
     // link/anchor) is considered as a broken anchor
     if (!targetPage) {
       return true;
     }
     // it's a not broken anchor if the anchor exists on the target page
+    const decodedHash = safeDecodeURIComponent(hash);
     if (
       targetPage.anchors.has(hash) ||
-      targetPage.anchors.has(decodeURIComponent(hash))
+      (decodedHash !== undefined && targetPage.anchors.has(decodedHash))
     ) {
       return false;
     }
